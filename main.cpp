@@ -1,22 +1,16 @@
-#include <vector>
-#include <string>
-#include "Image.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
-using namespace std;
-
-typedef vector<vector<int>> MAT;
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
 
 int main(int argc, char *argv[]) {
-    string path;
-    if (argc > 1) {
-        path = argv[1];
-    } else {
-        path = "/home/bscuser/Documents/Gaussian-Blurring-CUDA/";
-    }
+    int width, height, comp;
+    unsigned char *image = stbi_load("/home/bscuser/Documents/Gaussian-Blurring-CUDA/images/fruits.png", &width, &height, &comp, STBI_rgb);
 
-    Image gaussian = Image(path + "GaussianMatrix.png", 5);
+// escribir
+    stbi_write_jpg("/home/bscuser/Documents/Gaussian-Blurring-CUDA/images/res2.jpg", width, height, STBI_rgb, image, 255);
 
-    gaussian.showMatrix();
 
 }
