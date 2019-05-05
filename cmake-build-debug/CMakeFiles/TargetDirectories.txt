@@ -1,3 +1,0 @@
-/home/raul/Dropbox/uni/Cuarto/TGA/PRACTICA/Gaussian-Blurring-CUDA/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/home/raul/Dropbox/uni/Cuarto/TGA/PRACTICA/Gaussian-Blurring-CUDA/cmake-build-debug/CMakeFiles/main.exe.dir
-/home/raul/Dropbox/uni/Cuarto/TGA/PRACTICA/Gaussian-Blurring-CUDA/cmake-build-debug/CMakeFiles/edit_cache.dir

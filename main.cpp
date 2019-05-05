@@ -11,11 +11,12 @@
 
 using namespace std;
 
-string root = "/home/raul/Dropbox/uni/Cuarto/TGA/PRACTICA/Gaussian-Blurring-CUDA/images/";
+//string root = "/home/raul/Dropbox/uni/Cuarto/TGA/PRACTICA/Gaussian-Blurring-CUDA/images/";
 //string root = "/home/bscuser/Documents/Gaussian-Blurring-CUDA/images/";
+string root = "C:\\Users\\adrie\\OneDrive\\Documentos\\UNI\\TGA\\proyecto\\Gaussian-Blurring-CUDA\\images\\";
 
 
-struct pixel {
+struct pixel_t {
     int r, g, b;
 };
 
@@ -45,9 +46,7 @@ int main(int argc, char *argv[]) {
     }
 
     for (int i = 0; i < width*height; i+=3) {
-        int r = image[i] - '0';
-        int g = image[i+1] - '0';
-        int b = image[i+2] - '0';
+        pixel_t pixel = {.r = image[i] - '0', .g = image[i + 1] - '0', .b = image[i + 2] - '0'};
     }
 
     WRITE("result",width, height, STBI_rgb, image, 255);
