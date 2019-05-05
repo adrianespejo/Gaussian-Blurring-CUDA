@@ -10,12 +10,13 @@
 #include <stdio.h>
 #include <iostream>
 #include <string>
+#include <string.h>
 
 using namespace std;
 
-//string root = "/home/raul/Dropbox/uni/Cuarto/TGA/PRACTICA/Gaussian-Blurring-CUDA/images/";
+string root = "/home/raul/Dropbox/uni/Cuarto/TGA/PRACTICA/Gaussian-Blurring-CUDA/images/";
 //string root = "/home/bscuser/Documents/Gaussian-Blurring-CUDA/images/";
-string root = "C:\\Users\\adrie\\OneDrive\\Documentos\\UNI\\TGA\\proyecto\\Gaussian-Blurring-CUDA\\images\\";
+//string root = "C:\\Users\\adrie\\OneDrive\\Documentos\\UNI\\TGA\\proyecto\\Gaussian-Blurring-CUDA\\images\\";
 
 
 struct pixel_int_t {
@@ -26,12 +27,12 @@ struct pixel_double_t {
     double r, g, b;
 };
 
+int kernel[5][5] ={{1, 4,  7,  4,  1},
+                   {4, 16, 26, 16, 4},
+                   {7, 26, 41, 26, 7},
+                   {4, 16, 26, 16, 4},
+                   {1, 4,  7,  4,  1}};
 
-double kernel[5][5] = {{1.0 / 273.0, 4.0 / 273.0,  7.0 / 273.0,  4.0 / 273.0,  1.0 / 273.0},
-                       {4.0 / 273.0, 16.0 / 273.0, 26.0 / 273.0, 16.0 / 273.0, 4.0 / 273.0},
-                       {7.0 / 273.0, 26.0 / 273.0, 41.0 / 273.0, 26.0 / 273.0, 7.0 / 273.0},
-                       {4.0 / 273.0, 16.0 / 273.0, 26.0 / 273.0, 16.0 / 273.0, 4.0 / 273.0},
-                       {1.0 / 273.0, 4.0 / 273.0,  7.0 / 273.0,  4.0 / 273.0,  1.0 / 273.0}};
 
 unsigned char *LOAD(const string &imageName, int *width, int *height, int *comp, int desired_channels) {
     string imagePath = root + imageName;
@@ -47,6 +48,23 @@ void WRITE(const string &imageName, int width, int height, int comp, const void 
     stbi_write_jpg(path2, width, height, comp, data, quality);
 }
 
+pixel_int_t** transformImage(const unsigned char* image, int width, int height){
+    pixel_int_t** ret;
+    ret = new pixel_int_t*[height];
+
+    for(int i = 0; i<height; ++i){
+        ret[i] = new pixel_int_t[width];
+        int jj = 0;
+        for(int j = 0; j<width; j++){
+            jj = j*3;
+            ret[i][j].r = image[i * width*3 + jj] - '0';
+            ret[i][j].g = image[i * width*3 + jj+1] - '0';
+            ret[i][j].b = image[i * width*3 + jj+2] - '0';
+        }
+    }
+    return ret;
+}
+
 int main(int argc, char *argv[]) {
 
     int width, height, comp;
@@ -56,38 +74,29 @@ int main(int argc, char *argv[]) {
     if (image == nullptr) {
         throw std::runtime_error("ERROR loading: " + root + imageName);
     }
+    auto *new_image = (unsigned char *) malloc(height * width * 3 * sizeof(unsigned char));
 
-    auto *new_image = (unsigned char *) malloc(width * height * 3 * sizeof(unsigned char));
+    pixel_int_t **original = transformImage(image, width, height);
+    const pixel_int_t nullPixel = {.r=0, .g=0, .b=0};
 
-    int npixels, npixelsi, npixelsj;
-    npixels = npixelsi = npixelsj = 0;
-    // one loop
-//    for (int i = 0; i < width*height*3; i++){
-//        new_image[i] = image[i];
-//        npixels++;
-//    }
-    width = width * 3;
-    // two loops
+
     for (int i = 0; i < height; i++) {
-        npixelsi++;
-        npixelsj = 0;
-        for (int j = 0; j < width; j += 3) {
-            npixelsj++;
-            npixels++;
-//          dos for
-            // i*height + j is the center of the 5*5 submatrix
+        for (int j = 0; j < width; j++) {
+
+            int subindex = j * 3;
             pixel_int_t submatrix[5][5];
-            int p, q;
-            p = q = 0;
-            for (int i_b = i - 2; i_b <= i + 2; i_b++) {
-                for (int j_b = j - 2; j_b <= j + 2; j_b += 3) {
-                    pixel_int_t pixel_b;
-                    if (i_b < 0 || j_b < 0 || i_b >= height || j_b >= width) {
-                        pixel_b = {.r = 0, .g = 0, .b = 0};
-                    } else {
-                        pixel_b = {.r = (int) image[i_b * width + j_b],
-                                .g = (int) image[i_b * width + j_b + 1],
-                                .b = (int) image[i_b * width + j_b + 2]};
+
+            int p = 0, q = 0;
+
+            for (int ii = i - 2; ii <= i + 2; ii++) {
+                for (int jj = j - 2; jj <= j + 2; jj ++) {
+                    pixel_int_t pixel_b = nullPixel;
+                    if (not (ii < 0 || jj < 0 || ii >= height || jj >= width)){
+                       pixel_b = {
+                           .r = original[ii][jj].r,
+                           .g = original[ii][jj].g,
+                           .b = original[ii][jj].b
+                       };
                     }
                     submatrix[p][q] = pixel_b;
                     q++;
@@ -96,7 +105,7 @@ int main(int argc, char *argv[]) {
             }
 
             // compute submatrix * kernel
-            pixel_double_t res[5][5];
+            pixel_int_t res[5][5];
             for (int m = 0; m < 5; m++) {
                 for (int n = 0; n < 5; n++) {
                     res[m][n] = {.r = 0, .g = 0, .b = 0};
@@ -107,34 +116,26 @@ int main(int argc, char *argv[]) {
                     }
                 }
             }
-            pixel_double_t sum = {.r = 0, .g = 0, .b = 0};
+            pixel_double_t sum = {.r = 0.0, .g = 0.0, .b = 0.0};
             for (auto &row : res) {
                 for (auto &pos : row) {
-                    sum.r += pos.r;
-                    sum.g += pos.g;
-                    sum.b += pos.b;
+                    sum.r += (double) pos.r;
+                    sum.g += (double) pos.g;
+                    sum.b += (double) pos.b;
                 }
             }
 
-            new_image[i * width + j] = (char) round(sum.r);
-            new_image[i * width + j + 1] = (char) round(sum.g);
-            new_image[i * width + j + 2] = (char) round(sum.b);
 
-//            pixel_int_t pixel = {.r = (int) image[i * width + j],
-//                    .g = (int) image[i * width + j + 1],
-//                    .b = (int) image[i * width + j + 2]};
-//
-//            new_image[i * width + j] = (char) pixel.r;
-//            new_image[i * width + j + 1] = (char) pixel.g;
-//            new_image[i * width + j + 2] = (char) pixel.b;
+            new_image[i * (width*3) + subindex] = (unsigned char) (sum.r / 273.0) + '0';
+            new_image[i * (width*3) + subindex + 1] = (unsigned char) (sum.g / 273.0) + '0';
+            new_image[i * (width*3) + subindex + 2] = (unsigned char) (sum.b / 273.0) + '0';
+
         }
-        cout << "npixelsj: " << npixelsj << endl;
+
     }
 
-    cout << "npixels: " << npixels << endl;
-    cout << "npixelsi: " << npixelsi << endl;
-    WRITE("result", width / 3, height, STBI_rgb, image, 255);
-    WRITE("blurred_fruits15", width / 3, height, STBI_rgb, new_image, 255);
+    WRITE("result", width, height, STBI_rgb, image, 255);
+    WRITE("blurred_fruits", width, height, STBI_rgb, new_image, 255);
 
     free(image);
     free(new_image);
