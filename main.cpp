@@ -13,9 +13,9 @@
 
 using namespace std;
 
-string root = "/home/raul/Dropbox/uni/Cuarto/TGA/PRACTICA/Gaussian-Blurring-CUDA/images/";
+//string root = "/home/raul/Dropbox/uni/Cuarto/TGA/PRACTICA/Gaussian-Blurring-CUDA/images/";
 //string root = "/home/bscuser/Documents/Gaussian-Blurring-CUDA/images/";
-//string root = "C:\\Users\\adrie\\OneDrive\\Documentos\\UNI\\TGA\\proyecto\\Gaussian-Blurring-CUDA\\images\\";
+string root = "C:/Users/adrie/OneDrive/Documentos/UNI/TGA/proyecto/Gaussian-Blurring-CUDA/images/";
 
 struct pixel_int_t {
     int r, g, b;
@@ -42,11 +42,11 @@ void WRITEJPG(const string &imageName, int width, int height, int comp, const vo
     stbi_write_jpg(path2, width, height, comp, data, quality);
 }
 
-void WRITEPNG(const string &imageName, int width, int height, int comp, const void *data, int quality){
+void WRITEPNG(const string &imageName, int width, int height, int comp, const void *data, int quality) {
     string imagePath = root + imageName + ".png";
     char path2[imagePath.length() + 1];
     strcpy(path2, imagePath.c_str());
-    stbi_write_png(path2, width, height, comp, data, width*sizeof(char)*3);
+    stbi_write_png(path2, width, height, comp, data, width * sizeof(char) * 3);
 }
 
 pixel_int_t **transformImage(const unsigned char *image, int width, int height) {
@@ -69,9 +69,9 @@ pixel_int_t **transformImage(const unsigned char *image, int width, int height) 
 int main(int argc, char *argv[]) {
 
     int blurring_times = 1;
-    if(argc == 2){
+    if (argc == 2) {
         blurring_times = atoi(argv[1]);
-    }
+    } else blurring_times = 10;
     int width, height, comp;
     string imageName = "fruits.png";
     unsigned char *image = LOAD(imageName, &width, &height, &comp, STBI_rgb);
@@ -83,14 +83,13 @@ int main(int argc, char *argv[]) {
 
     pixel_int_t **original = transformImage(image, width, height);
 
-    for(int times = 0; times < blurring_times; ++times){
+    for (int times = 0; times < blurring_times; ++times) {
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
 
                 pixel_int_t sumX{}, ans{};
                 sumX = ans = {.r=0, .g=0, .b=0};
-                int r = row;
-                int c = col;
+                int r, c;
                 for (int i = -2; i <= 2; i++) {
                     for (int j = -2; j <= 2; j++) {
                         r = row + i;
