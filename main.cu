@@ -104,7 +104,7 @@ __global__ void Kernel10(int width, int height, pixel_int_t *A, int *B, unsigned
 // Por defecto, N = 639, M = 641, P = 1023, test == 'N'
 
 int main(int argc, char **argv) {
-    int width, height, comp;
+    int width, height, comp, blurredTimes;
     unsigned int numBytesA, numBytesB, numBytesC;
     unsigned int nBlocksN, nBlocksM, nThreads;
 
@@ -116,12 +116,19 @@ int main(int argc, char **argv) {
     if (argc == 1) {
         imageName = "fruits.png";
         resultName = "result";
+        blurredTimes = 1;
     } else if (argc == 2) {
         imageName = argv[1];
         resultName = "result";
+        blurredTimes = 1;
     } else if (argc == 3) {
         imageName = argv[1];
         resultName = argv[2];
+        blurredTimes = 1;
+    } else if (argc == 4) {
+        imageName = argv[1];
+        resultName = argv[2];
+        blurredTimes = atoi(argv[3]);
     } else {
         printf("Usage: ./exe IMAGENAME RESULTNAME\n");
         exit(0);
