@@ -96,8 +96,7 @@ int main(int argc, char *argv[]) {
                         c = col + j;
                         r = min(max(0, r), width - 1);
                         c = min(max(0, c), height - 1);
-                        pixel_int_t pixel{};
-                        if (not(r < 0 || c < 0 || r >= height || c >= width)) pixel = original[r][c];
+                        pixel_int_t pixel = original[r][c];
                         sumX.r += pixel.r * kernel[i + 2][j + 2];
                         sumX.g += pixel.g * kernel[i + 2][j + 2];
                         sumX.b += pixel.b * kernel[i + 2][j + 2];
