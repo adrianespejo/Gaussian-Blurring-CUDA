@@ -13,8 +13,8 @@
 
 using namespace std;
 
-//string root = "/home/raul/Dropbox/uni/Cuarto/TGA/PRACTICA/Gaussian-Blurring-CUDA/images/";
-string root = "/home/bscuser/Documents/Gaussian-Blurring-CUDA/images/";
+string root = "/home/raul/Dropbox/uni/Cuarto/TGA/PRACTICA/Gaussian-Blurring-CUDA/images/";
+//string root = "/home/bscuser/Documents/Gaussian-Blurring-CUDA/images/";
 //string root = "C:/Users/adrie/OneDrive/Documentos/UNI/TGA/proyecto/Gaussian-Blurring-CUDA/images/";
 
 struct pixel_int_t {
@@ -49,28 +49,25 @@ void WRITEPNG(const string &imageName, int width, int height, int comp, const vo
     stbi_write_png(path2, width, height, comp, data, width * sizeof(char) * 3);
 }
 
-pixel_int_t *transformImage(const unsigned char *image, int width, int height) {
-    pixel_int_t *ret;
-    ret = new pixel_int_t [height*width];
-
-    for (int i = 0; i < height; ++i) {
-        int jj = 0;
-        for (int j = 0; j < width; j++) {
-            jj = j * 3;
-            ret[i*width+j].r = image[i * width * 3 + jj];
-            ret[i*width+j].g = image[i * width * 3 + jj + 1];
-            ret[i*width+j].b = image[i * width * 3 + jj + 2];
+void disassembleImage(
+        const unsigned char *image, unsigned int *matrixR, unsigned int *matrixG, unsigned int *matrixB, int w, int h){
+    for(int i = 0; i<h; ++i){
+        for(int j = 0; j<w; ++j){
+            int pos = i*w*3 + j*3;
+            matrixR[i*w + j] = image[pos];
+            matrixG[i*w + j] = image[pos+1];
+            matrixB[i*w + j] = image[pos+2];
         }
     }
-    return ret;
 }
 
 int main(int argc, char *argv[]) {
 
-    int blurring_times = 1;
+    int blurring_times = 10;
+
     if (argc == 2) {
         blurring_times = atoi(argv[1]);
-    } else blurring_times = 10;
+    }
     int width, height, comp;
     string imageName = "fruits.png";
     unsigned char *image = LOAD(imageName, &width, &height, &comp, STBI_rgb);
@@ -80,14 +77,22 @@ int main(int argc, char *argv[]) {
     }
     auto *new_image = (unsigned char *) malloc(height * width * 3 * sizeof(unsigned char));
 
-    pixel_int_t *original = transformImage(image, width, height);
+    unsigned int matrixR[width * height];
+    unsigned int matrixG[width * height];
+    unsigned int matrixB[width * height];
+
+    disassembleImage(image, matrixR, matrixG, matrixB, width, height);
 
     for (int times = 0; times < blurring_times; ++times) {
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
 
-                pixel_int_t sumX{}, ans{};
-                sumX = ans = {.r=0, .g=0, .b=0};
+                unsigned int sumR = 0;
+                unsigned int sumG = 0;
+                unsigned int sumB = 0;
+                unsigned int ansR = 0;
+                unsigned int ansG = 0;
+                unsigned int ansB = 0;
                 int r, c;
                 for (int i = -2; i <= 2; i++) {
                     for (int j = -2; j <= 2; j++) {
@@ -95,36 +100,36 @@ int main(int argc, char *argv[]) {
                         c = col + j;
                         r = min(max(0, r), width - 1);
                         c = min(max(0, c), height - 1);
-                        pixel_int_t pixel{};
-                        if (not(r < 0 || c < 0 || r >= height || c >= width)) pixel = original[r*width+c];
-                        sumX.r += pixel.r * kernel[i + 2][j + 2];
-                        sumX.g += pixel.g * kernel[i + 2][j + 2];
-                        sumX.b += pixel.b * kernel[i + 2][j + 2];
-
+                        unsigned int pixelR = matrixR[r*width + c];
+                        unsigned int pixelG = matrixG[r*width + c];
+                        unsigned int pixelB = matrixB[r*width + c];
+                        sumR += pixelR * kernel[i + 2][j + 2];
+                        sumG += pixelG * kernel[i + 2][j + 2];
+                        sumB += pixelB * kernel[i + 2][j + 2];
                     }
                 }
-                ans.r = abs(sumX.r) / 273;
-                ans.g = abs(sumX.g) / 273;
-                ans.b = abs(sumX.b) / 273;
-                if (ans.r > 255) ans.r = 255;
-                if (ans.g > 255) ans.g = 255;
-                if (ans.b > 255) ans.b = 255;
-                if (ans.r < 0) ans.r = 0;
-                if (ans.g < 0) ans.g = 0;
-                if (ans.b < 0) ans.b = 0;
-                new_image[row * (width * 3) + col * 3] = (unsigned char) ans.r;
-                new_image[row * (width * 3) + col * 3 + 1] = (unsigned char) ans.g;
-                new_image[row * (width * 3) + col * 3 + 2] = (unsigned char) ans.b;
+                ansR = sumR / 273;
+                ansG = sumG / 273;
+                ansB = sumB / 273;
+                if (ansR > 255) ansR = 255;
+                if (ansG > 255) ansG = 255;
+                if (ansB > 255) ansB = 255;
+                if (ansR < 0) ansR = 0;
+                if (ansG < 0) ansG = 0;
+                if (ansB < 0) ansB = 0;
+                new_image[row * (width * 3) + col * 3] = (unsigned char) ansR;
+                new_image[row * (width * 3) + col * 3 + 1] = (unsigned char) ansG;
+                new_image[row * (width * 3) + col * 3 + 2] = (unsigned char) ansB;
 
             }
 
         }
-        original = transformImage(new_image, width, height);
+        disassembleImage(new_image, matrixR, matrixG, matrixB, width, height);
     }
 
 
     WRITEPNG("result_SAME", width, height, STBI_rgb, image, 255);
-    string name = "result_BLURRED_x_new" + to_string(blurring_times);
+    string name = "result_BLURRED_x_" + to_string(blurring_times);
     WRITEPNG(name, width, height, STBI_rgb, new_image, 255);
 
     free(image);

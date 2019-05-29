@@ -14,8 +14,8 @@
 using namespace std;
 
 //string root = "/home/raul/Dropbox/uni/Cuarto/TGA/PRACTICA/Gaussian-Blurring-CUDA/images/";
-string root = "/home/bscuser/Documents/Gaussian-Blurring-CUDA/images/";
-//string root = "C:/Users/adrie/OneDrive/Documentos/UNI/TGA/proyecto/Gaussian-Blurring-CUDA/images/";
+//string root = "/home/bscuser/Documents/Gaussian-Blurring-CUDA/images/";
+string root = "C:/Users/adrie/OneDrive/Documentos/UNI/TGA/proyecto/Gaussian-Blurring-CUDA/images/";
 
 struct pixel_int_t {
     int r, g, b;
@@ -49,17 +49,18 @@ void WRITEPNG(const string &imageName, int width, int height, int comp, const vo
     stbi_write_png(path2, width, height, comp, data, width * sizeof(char) * 3);
 }
 
-pixel_int_t *transformImage(const unsigned char *image, int width, int height) {
-    pixel_int_t *ret;
-    ret = new pixel_int_t [height*width];
+pixel_int_t **transformImage(const unsigned char *image, int width, int height) {
+    pixel_int_t **ret;
+    ret = new pixel_int_t *[height];
 
     for (int i = 0; i < height; ++i) {
+        ret[i] = new pixel_int_t[width];
         int jj = 0;
         for (int j = 0; j < width; j++) {
             jj = j * 3;
-            ret[i*width+j].r = image[i * width * 3 + jj];
-            ret[i*width+j].g = image[i * width * 3 + jj + 1];
-            ret[i*width+j].b = image[i * width * 3 + jj + 2];
+            ret[i][j].r = image[i * width * 3 + jj];
+            ret[i][j].g = image[i * width * 3 + jj + 1];
+            ret[i][j].b = image[i * width * 3 + jj + 2];
         }
     }
     return ret;
@@ -80,7 +81,7 @@ int main(int argc, char *argv[]) {
     }
     auto *new_image = (unsigned char *) malloc(height * width * 3 * sizeof(unsigned char));
 
-    pixel_int_t *original = transformImage(image, width, height);
+    pixel_int_t **original = transformImage(image, width, height);
 
     for (int times = 0; times < blurring_times; ++times) {
         for (int row = 0; row < height; row++) {
@@ -96,7 +97,7 @@ int main(int argc, char *argv[]) {
                         r = min(max(0, r), width - 1);
                         c = min(max(0, c), height - 1);
                         pixel_int_t pixel{};
-                        if (not(r < 0 || c < 0 || r >= height || c >= width)) pixel = original[r*width+c];
+                        if (not(r < 0 || c < 0 || r >= height || c >= width)) pixel = original[r][c];
                         sumX.r += pixel.r * kernel[i + 2][j + 2];
                         sumX.g += pixel.g * kernel[i + 2][j + 2];
                         sumX.b += pixel.b * kernel[i + 2][j + 2];
@@ -124,7 +125,7 @@ int main(int argc, char *argv[]) {
 
 
     WRITEPNG("result_SAME", width, height, STBI_rgb, image, 255);
-    string name = "result_BLURRED_x_new" + to_string(blurring_times);
+    string name = "result_BLURRED_x_" + to_string(blurring_times);
     WRITEPNG(name, width, height, STBI_rgb, new_image, 255);
 
     free(image);
