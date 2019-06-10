@@ -1,0 +1,51 @@
+kernel00
+
+==43841== NVPROF is profiling process 43841, command: ./main00.exe lena.png resultado_lena_00
+==43841== Some kernel(s) will be replayed on device 0 in order to collect all events/metrics.
+==43841== Profiling application: ./main00.exe lena.png resultado_lena_00
+==43841== Profiling result:
+==43841== Metric result:
+Invocations                               Metric Name                        Metric Description         Min         Max         Avg
+Device "Tesla K40c (0)"
+    Kernel: Kernel00(int, int, pixel_int_t*, unsigned char*)
+         10                             sm_efficiency                   Multiprocessor Activity      93.93%      94.97%      94.55%
+         10                        achieved_occupancy                        Achieved Occupancy    0.852923    0.896020    0.878559
+         10                  gld_requested_throughput          Requested Global Load Throughput  96.093GB/s  96.921GB/s  96.541GB/s
+         10                  gst_requested_throughput         Requested Global Store Throughput  986.30MB/s  994.80MB/s  989.91MB/s
+         10                          dram_utilization                 Device Memory Utilization     Low (1)     Low (1)     Low (1)
+         10                    shared_load_throughput             Shared Memory Load Throughput  0.00000B/s  0.00000B/s  0.00000B/s
+
+==47291== NVPROF is profiling process 47291, command: ./main00.exe lena.png resultado_lena_00
+==47291== Profiling application: ./main00.exe lena.png resultado_lena_00
+==47291== Profiling result:
+Time(%)      Time     Calls       Avg       Min       Max  Name
+ 50.67%  8.6420ms        10  864.20us  856.27us  885.29us  [CUDA memcpy HtoD]
+ 44.11%  7.5240ms        10  752.40us  744.49us  761.35us  Kernel00(int, int, pixel_int_t*, unsigned char*)
+  5.22%  890.73us        10  89.072us  88.641us  89.441us  [CUDA memcpy DtoH]
+
+------------------------------------------------------------------------------------------------------------------------------------------------
+
+kernel00_v2
+
+==44754== NVPROF is profiling process 44754, command: ./main00_v2.exe lena.png resultado_lena_02
+==44754== Some kernel(s) will be replayed on device 0 in order to collect all events/metrics.
+==44754== Profiling application: ./main00_v2.exe lena.png resultado_lena_02
+==44754== Profiling result:
+==44754== Metric result:
+Invocations                               Metric Name                        Metric Description         Min         Max         Avg
+Device "Tesla K40c (0)"
+    Kernel: Kernel00(int, int, unsigned int*, unsigned int*, unsigned int*, unsigned char*)
+         10                             sm_efficiency                   Multiprocessor Activity      93.40%      95.65%      94.13%
+         10                        achieved_occupancy                        Achieved Occupancy    0.926088    0.931619    0.929099
+         10                  gld_requested_throughput          Requested Global Load Throughput  256.86GB/s  260.81GB/s  258.32GB/s
+         10                  gst_requested_throughput         Requested Global Store Throughput  2.5746GB/s  2.6142GB/s  2.5881GB/s
+         10                          dram_utilization                 Device Memory Utilization     Low (1)     Low (1)     Low (1)
+         10                    shared_load_throughput             Shared Memory Load Throughput  0.00000B/s  0.00000B/s  0.00000B/s
+
+==47692== NVPROF is profiling process 47692, command: ./main00_v2.exe lena.png resultado_lena_02
+==47692== Profiling application: ./main00_v2.exe lena.png resultado_lena_02
+==47692== Profiling result:
+Time(%)      Time     Calls       Avg       Min       Max  Name
+ 45.42%  3.0762ms        30  102.54us  102.21us  103.04us  [CUDA memcpy HtoD]
+ 41.42%  2.8050ms        10  280.50us  275.72us  283.94us  Kernel00(int, int, unsigned int*, unsigned int*, unsigned int*, unsigned char*)
+ 13.16%  891.53us        10  89.153us  87.841us  89.954us  [CUDA memcpy DtoH]
