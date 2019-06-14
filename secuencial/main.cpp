@@ -15,6 +15,12 @@
 
 using namespace std;
 
+// definición de un pixel con sus tres canales de color (R,G,B)
+struct pixel_int_t {
+    int r, g, b;
+};
+
+
 // Gaussian blur
 int kernel_G[5][5] = {{1, 4,  7,  4,  1},
                       {4, 16, 26, 16, 4},
@@ -23,13 +29,25 @@ int kernel_G[5][5] = {{1, 4,  7,  4,  1},
                       {1, 4,  7,  4,  1}};
 int kernel_G_value = 273;
 
-// vertical blur
-int kernel[5][1] = {{1},
-                    {1},
-                    {1},
-                    {1},
-                    {1}};
+// horizontal blur
+int kernel[1][5] = {1, 1, 1, 1, 1};
 int kernel_value = 5;
+
+// vertical blur
+int kernel_vertical[5][1] = {{1},
+                             {1},
+                             {1},
+                             {1},
+                             {1}};
+int kernel_vertical_alue = 5;
+
+// custom blur
+int kernel_custom[5][5] = {{1, 1, 1, 1, 1},
+                           {1, 0, 0, 0, 1},
+                           {1, 0, 1, 0, 1},
+                           {1, 0, 0, 0, 1},
+                           {1, 1, 1, 1, 1}};
+int kernel_custom_value = 17;
 
 
 // funcion auxiliar para importar una imagen
@@ -48,18 +66,23 @@ void WRITEPNG(const string &imageName, int width, int height, int comp, const vo
     stbi_write_png(path2, width, height, comp, data, width * sizeof(char) * 3);
 }
 
-// Transformamos la imagen almacenada en un vector de char
-// a una estructura de 3 matrices, una para cada canal de color
-void disassembleImage(
-        const unsigned char *image, unsigned int *matrixR, unsigned int *matrixG, unsigned int *matrixB, int w, int h) {
-    for (int i = 0; i < h; ++i) {
-        for (int j = 0; j < w; ++j) {
-            int pos = i * w * 3 + j * 3;
-            matrixR[i * w + j] = image[pos];
-            matrixG[i * w + j] = image[pos + 1];
-            matrixB[i * w + j] = image[pos + 2];
+// Transforma una imagen almacenada en un vector de char
+// a una almacenada en una matriz de pixels
+pixel_int_t **transformImage(const unsigned char *image, int width, int height) {
+    pixel_int_t **ret;
+    ret = new pixel_int_t *[height];
+
+    for (int i = 0; i < height; ++i) {
+        ret[i] = new pixel_int_t[width];
+        int jj = 0;
+        for (int j = 0; j < width; j++) {
+            jj = j * 3;
+            ret[i][j].r = image[i * width * 3 + jj];
+            ret[i][j].g = image[i * width * 3 + jj + 1];
+            ret[i][j].b = image[i * width * 3 + jj + 2];
         }
     }
+    return ret;
 }
 
 int main(int argc, char *argv[]) {
@@ -70,8 +93,8 @@ int main(int argc, char *argv[]) {
     string imageName = "/images/fruits.png";
 
     if (argc == 3) {
-        blurring_times = atoi(argv[1]);
-        imageName = argv[2];
+        blurring_times = atoi(argv[2]);
+        imageName = argv[1];
     }
 
     int width, height, comp;
@@ -86,11 +109,8 @@ int main(int argc, char *argv[]) {
     // Reservamos el espacio de memoria que ocupará la imagen resultante
     auto *new_image = (unsigned char *) malloc(height * width * 3 * sizeof(unsigned char));
 
-    // Transformamos la imagen de entrada en 3 matrices de enteros
-    unsigned int matrixR[width * height];
-    unsigned int matrixG[width * height];
-    unsigned int matrixB[width * height];
-    disassembleImage(image, matrixR, matrixG, matrixB, width, height);
+    // Transformamos la imagen de entrada en una matriz de píxeles
+    pixel_int_t **original = transformImage(image, width, height);
 
     for (int times = 0; times < blurring_times; ++times) {
         for (int row = 0; row < height; row++) {
@@ -98,13 +118,8 @@ int main(int argc, char *argv[]) {
 
                 // Para cada pixel de la imagen calculamos la submatriz de píxeles que lo rodea
                 // Y obtenemos el resultado del producto ponderado de dicha submatriz por el kernel
-                // Realizamos esto para cada una de las 3 submatrices de R,G,B
-                unsigned int sumR = 0;
-                unsigned int sumG = 0;
-                unsigned int sumB = 0;
-                unsigned int ansR = 0;
-                unsigned int ansG = 0;
-                unsigned int ansB = 0;
+                pixel_int_t sumX{}, ans{};
+                sumX = ans = {.r=0, .g=0, .b=0};
                 int r, c;
                 int margin_x = NELEMS(kernel) / 2;
                 int margin_y = NELEMS(kernel[0]) / 2;
@@ -114,38 +129,39 @@ int main(int argc, char *argv[]) {
                         c = col + j;
                         r = min(max(0, r), height - 1);
                         c = min(max(0, c), width - 1);
-                        unsigned int pixelR = matrixR[r * width + c];
-                        unsigned int pixelG = matrixG[r * width + c];
-                        unsigned int pixelB = matrixB[r * width + c];
-                        sumR += pixelR * kernel[i + margin_x][j + margin_y];
-                        sumG += pixelG * kernel[i + margin_x][j + margin_y];
-                        sumB += pixelB * kernel[i + margin_x][j + margin_y];
+                        pixel_int_t pixel{};
+                        if (not(r < 0 || c < 0 || r >= height || c >= width)) pixel = original[r][c];
+                        // horizontal blur
+                        sumX.r += pixel.r * kernel[i + margin_x][j + margin_y];
+                        sumX.g += pixel.g * kernel[i + margin_x][j + margin_y];
+                        sumX.b += pixel.b * kernel[i + margin_x][j + margin_y];
+
                     }
                 }
-
-                ansR = sumR / kernel_value;
-                ansG = sumG / kernel_value;
-                ansB = sumB / kernel_value;
+                ans.r = abs(sumX.r) / kernel_value;
+                ans.g = abs(sumX.g) / kernel_value;
+                ans.b = abs(sumX.b) / kernel_value;
 
                 // Para evitar pequeños errores:
-                if (ansR > 255) ansR = 255;
-                if (ansG > 255) ansG = 255;
-                if (ansB > 255) ansB = 255;
-                if (ansR < 0) ansR = 0;
-                if (ansG < 0) ansG = 0;
-                if (ansB < 0) ansB = 0;
+                if (ans.r > 255) ans.r = 255;
+                if (ans.g > 255) ans.g = 255;
+                if (ans.b > 255) ans.b = 255;
+                if (ans.r < 0) ans.r = 0;
+                if (ans.g < 0) ans.g = 0;
+                if (ans.b < 0) ans.b = 0;
 
                 // Una vez tenemos el valor del pixel borroso lo almacenamos en la imagen resultante
-                new_image[row * (width * 3) + col * 3] = (unsigned char) ansR;
-                new_image[row * (width * 3) + col * 3 + 1] = (unsigned char) ansG;
-                new_image[row * (width * 3) + col * 3 + 2] = (unsigned char) ansB;
+                new_image[row * (width * 3) + col * 3] = (unsigned char) ans.r;
+                new_image[row * (width * 3) + col * 3 + 1] = (unsigned char) ans.g;
+                new_image[row * (width * 3) + col * 3 + 2] = (unsigned char) ans.b;
 
             }
 
         }
-        // Si queremos seguir iterando necesitamos convertir la imagen resultante a un conjunto de 3 matrices
-        disassembleImage(new_image, matrixR, matrixG, matrixB, width, height);
+        // Si queremos seguir iterando necesitamos convertir la imagen resultante a una matriz de píxeles
+        original = transformImage(new_image, width, height);
     }
+
 
     // Guardamos la imagen resultante
     string name = imageName + "_blurred_" + to_string(blurring_times) + "_times";
